@@ -2,26 +2,30 @@
 
 namespace Kafka.Consumer.Handler.Handlers
 {
-    public class MessageHandler : IHostedService
+    public class MessageHandler : BackgroundService
     {
         private readonly ILogger _logger;
+
         public MessageHandler(ILogger<MessageHandler> logger)
         {
             _logger = logger;
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var conf = new ConsumerConfig
             {
                 GroupId = "test-consumer-group",
                 BootstrapServers = "localhost:9092",
-                AutoOffsetReset = AutoOffsetReset.Earliest
+                AutoOffsetReset = AutoOffsetReset.Earliest,
+                EnableAutoCommit = false,
+                EnableAutoOffsetStore = false
             };
 
             using (var c = new ConsumerBuilder<Ignore, string>(conf).Build())
             {
                 c.Subscribe("queue_test");
+
                 var cts = new CancellationTokenSource();
 
                 try
@@ -29,7 +33,10 @@ namespace Kafka.Consumer.Handler.Handlers
                     while (true)
                     {
                         var message = c.Consume(cts.Token);
+
                         _logger.LogInformation($"Message: {message.Value} received {message.TopicPartitionOffset}");
+
+
                     }
                 }
                 catch (OperationCanceledException)
@@ -37,14 +44,6 @@ namespace Kafka.Consumer.Handler.Handlers
                     c.Close();
                 }
             }
-
-            return Task.CompletedTask;
-
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
         }
     }
 }

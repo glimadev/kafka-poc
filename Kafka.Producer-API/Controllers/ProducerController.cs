@@ -18,7 +18,10 @@ namespace Kafka.Producer_API.Controllers
 
         private string SendMessageByKafka(string message)
         {
-            var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
+            var config = new ProducerConfig { 
+                BootstrapServers = "localhost:9092",
+                EnableIdempotence = true
+            };
 
             using (var producer = new ProducerBuilder<Null, string>(config).Build())
             {

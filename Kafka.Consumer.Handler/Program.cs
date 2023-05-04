@@ -3,7 +3,7 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<IHostedService, MessageHandler>();
+builder.Services.AddHostedService<MessageHandler>();
 
 var app = builder.Build();
 
