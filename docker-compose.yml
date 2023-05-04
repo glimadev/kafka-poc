@@ -1,16 +1,19 @@
 version: '2'
 services:
+  # zookeeper handles the leadership election of Kafka brokers 
+  # and manages service discovery as well as cluster topology
   zookeeper:
     image: wurstmeister/zookeeper
     ports:
       - "2181:2181"
   kafka:
-    image: wurstmeister/kafka:0.10.2.0
+    image: wurstmeister/kafka:latest
     ports:
       - "9092:9092"
+    depends_on:
+      - zookeeper
     environment:
       KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
-      KAFKA_CREATE_TOPICS: "fila_pedido:1:1"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

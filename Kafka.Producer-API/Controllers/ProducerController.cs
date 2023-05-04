@@ -7,18 +7,23 @@ namespace Kafka.Producer_API.Controllers
     [ApiController]
     public class ProducerController : ControllerBase
     {
+        private readonly ILogger _logger;
+
+        public ProducerController(ILogger<ProducerController> logger)
+        {
+            _logger = logger;
+        }
+
         [HttpPost]
         [ProducesResponseType(typeof(string), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(500)]
-        public IActionResult Post([FromQuery] string msg)
+        public async Task<IActionResult> Post([FromQuery] string msg)
         {
-            return Created("", SendMessageByKafka(msg));
-        }
+            string result = string.Empty;
 
-        private string SendMessageByKafka(string message)
-        {
-            var config = new ProducerConfig { 
+            var config = new ProducerConfig
+            {
                 BootstrapServers = "localhost:9092",
                 EnableIdempotence = true
             };
@@ -27,21 +32,18 @@ namespace Kafka.Producer_API.Controllers
             {
                 try
                 {
-                    var sendResult = producer
-                                        .ProduceAsync("queue_test", new Message<Null, string> { Value = message })
-                                        .GetAwaiter()
-                                        .GetResult();
+                    //Data is pushed to the broker from the producer and pulled from the broker by the consumer
+                    var sendResult = await producer.ProduceAsync("queue_test", new Message<Null, string> { Value = msg });
 
-                    return $"Message '{sendResult.Value}' of '{sendResult.TopicPartitionOffset}'";
+                    result = $"Message '{sendResult.Value}' of '{sendResult.TopicPartitionOffset}'";
                 }
                 catch (ProduceException<Null, string> e)
                 {
-                    Console.WriteLine($"Delivery failed: {e.Error.Reason}");
+                    _logger.LogError($"Delivery failed: {e.Error.Reason}");
                 }
             }
 
-            return string.Empty;
+            return Created("", result);
         }
-
     }
 }
